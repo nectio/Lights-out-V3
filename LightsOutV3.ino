@@ -26,15 +26,16 @@ const long interval = 5000; // Interval voor inactiefCon()
 bool verzenden = true;
 
 void setup() {
-  pinMode(knop1, OUTPUT); // what the fuck? ingangen moesten toch niet als OUTPUT gedeclareerd zijn???
-  pinMode(knop2, OUTPUT);
-  pinMode(knop3, OUTPUT);
-  pinMode(knop4, OUTPUT);
-  pinMode(knop5, OUTPUT); 
+  pinMode(knop1, INPUT);
+  pinMode(knop2, INPUT);
+  pinMode(knop3, INPUT);
+  pinMode(knop4, INPUT);
+  pinMode(knop5, INPUT); 
 
   pinMode(rel1, OUTPUT);
   pinMode(rel2, OUTPUT);
   pinMode(rel3, OUTPUT);
+  
   digitalWrite(rel1, relStd1); // initiële relaisstatus instellen
   digitalWrite(rel2, relStd2);
   digitalWrite(rel3, relStd3);
