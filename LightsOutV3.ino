@@ -1,57 +1,41 @@
 char ingang;
-
-const int rel1 = 3;
-const int rel2 = 4;
-const int rel3 = 5;
-
-const int knop1 = 11;
-const int knop2 = 10;
-const int knop3 = 9;
-const int knop4 = 8;
-const int knop5 = 12;
-
-bool relStd1 = false; // relStd staat voor relai stand
-bool relStd2 = false;
-bool relStd3 = false;
-
+bool isActief = false;
 int knopStd; // knopStd staat voor knop stand
-int hrkKnopStd1 = LOW; // hrkKnopStd1 staat voor laatst herkende knop stand
-int hrkKnopStd2 = LOW;
-int hrkKnopStd3 = LOW;
-int hrkKnopStd4 = LOW;
-int hrkKnopStd5 = LOW;
+
+const int rels[] = {3,4,5};
+bool relStds[] = {false,false,false}; // relStd staat voor relais standen
+const int knopjes[] = {11,10,9,8,12};
+int hrkKnopStds[] = {LOW,LOW,LOW,LOW,LOW}; // hrkKnopStds staat voor laatst herkende knop standen
 
 unsigned long vrgMilis = 0;
 const long interval = 5000; // Interval voor inactiefCon()
 bool verzenden = true;
 
 void setup() {
-  pinMode(knop1, INPUT);
-  pinMode(knop2, INPUT);
-  pinMode(knop3, INPUT);
-  pinMode(knop4, INPUT);
-  pinMode(knop5, INPUT); 
+  for (int i = 0; i < 5; i++) {
+    pinMode(knopjes[i], OUTPUT); // what the fuck? ingangen moesten toch niet als OUTPUT gedeclareerd zijn???
+  }
 
-  pinMode(rel1, OUTPUT);
-  pinMode(rel2, OUTPUT);
-  pinMode(rel3, OUTPUT);
-  
-  digitalWrite(rel1, relStd1); // initiële relaisstatus instellen
-  digitalWrite(rel2, relStd2);
-  digitalWrite(rel3, relStd3);
+  for (int i = 0; i < 3; i++) {
+    pinMode(rels[i], OUTPUT);
+  }
+
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(rels[i], relStds[i]); // initiële relaisstatus instellen
+  }
 
   Serial.begin(9600);
 }
 
 void loop() {
-  drukknop();
+  buttonHandler();
   if (verzenden) {
     inactiefCon();
   }
 
   if (Serial.available() > 0) {
     char ingang = Serial.read();
-    software(ingang);
+    cliHandler(ingang);
   }
 }
 
@@ -64,37 +48,38 @@ void inactiefCon() {
   }
 }
 
-void drukknop() {
+void buttonHandler() {
+  int hdgKnopStd[5];
 
-  int hdgKnopStd1 = digitalRead(knop1);
-  int hdgKnopStd2 = digitalRead(knop2);
-  int hdgKnopStd3 = digitalRead(knop3);
-  int hdgKnopStd4 = digitalRead(knop4);
-  int hdgKnopStd5 = digitalRead(knop5);
+  for (int i = 0; i < 5; i++) {
+    hdgKnopStd[i] = digitalRead(knopjes[i]);
+  }
 
-  if (hdgKnopStd1 != hrkKnopStd1) {               // check of de knop stand verandert is van laag naar hoog (induwen van knop1)
-    if (hdgKnopStd1 == HIGH) {                    // schakel de relais in of uit op de moment de knop ingeduwt word (HIGH)
-      Serial.println("S1");                       // geef aan in het opdrachtregel dat er een drukknop geduwt is
-      relStd1 = !relStd1;                         // schakel de stand van de relai
-      digitalWrite(rel1, relStd1);                // stel de relai in als behoort
-      if (relStd1) {
-        Serial.println("\033[32;49m[S1] E1 AAN"); // als E1 aangezet werd, geef het door aan de opdrachtregel
+  if (hdgKnopStd[0] != hrkKnopStds[0]) {             // check of de knop stand verandert is (induwen van knop1)
+    if (hdgKnopStd[0] == HIGH) {                     // schakel de relais in of uit op de moment de knop ingeduwt word (HIGH)
+      Serial.println("S1");                          // geef aan in het opdrachtregel dat er een buttonHandler geduwt is
+      relStds[0] = !relStds[0];                      // schakel de stand van de relai
+      blink();
+      digitalWrite(rels[0], relStds[0]);             // stel de relai in als behoort
+      if (relStds[0]) {
+        Serial.println("\033[32;49m[S1] E1 AAN");    // als E1 aangezet werd, geef het door aan de opdrachtregel
         rdy();
       } else {
-        Serial.println("\033[31;49m[S1] E1 UIT"); // als E1 uitgezet werd, geef het door aan de opdrachtregel
+        Serial.println("\033[31;49m[S1] E1 UIT");    // als E1 uitgezet werd, geef het door aan de opdrachtregel
         rdy();
       }
     }
   }
 
-  hrkKnopStd1 = hdgKnopStd1; // slaag de huidige status op als de laatste status voor de volgende keer
+  hrkKnopStds[0] = hdgKnopStd[0]; // slaag de huidige status op als de laatste status voor de volgende keer
 
-  if (hdgKnopStd2 != hrkKnopStd2) {
-    if (hdgKnopStd2 == HIGH) {
+  if (hdgKnopStd[1] != hrkKnopStds[1]) {
+    if (hdgKnopStd[1] == HIGH) {
       Serial.println("S2");
-      relStd2 = !relStd2; 
-      digitalWrite(rel2, relStd2);
-      if (relStd2) {
+      relStds[1] = !relStds[1];
+      digitalWrite(rels[1], relStds[1]);
+      blink();
+      if (relStds[1]) {
         Serial.println("\033[32;49m[S2] E2 AAN");
         rdy();
       } else {
@@ -104,14 +89,15 @@ void drukknop() {
     }
   }
 
-  hrkKnopStd2 = hdgKnopStd2;
+  hrkKnopStds[1] = hdgKnopStd[1];
 
-  if (hdgKnopStd3 != hrkKnopStd3) {
-    if (hdgKnopStd3 == HIGH) {
+  if (hdgKnopStd[2] != hrkKnopStds[2]) {
+    if (hdgKnopStd[2] == HIGH) {
       Serial.println("S3");
-      relStd3 = !relStd3;
-      digitalWrite(rel3, relStd3);
-      if (relStd3 == HIGH) {
+      relStds[2] = !relStds[2];
+      digitalWrite(rels[2], relStds[2]);
+      blink();
+      if (relStds[2] == HIGH) {
         Serial.println("\033[32;49m[S3] E3 AAN");
         rdy();
       } else {
@@ -120,43 +106,50 @@ void drukknop() {
       }
     }
   }
-  hrkKnopStd3 = hdgKnopStd3;
+  hrkKnopStds[2] = hdgKnopStd[2];
 
-  if (hdgKnopStd4 != hrkKnopStd4 && relStd1 == HIGH || relStd2 == HIGH || relStd3 == HIGH) {
-    if (hdgKnopStd4 == HIGH) {
+  if (!isActief && hdgKnopStd[3] != hrkKnopStds[3] && (relStds[0] == HIGH || relStds[1] == HIGH || relStds[2] == HIGH)) {
+    isActief = true;
+    if (hdgKnopStd[3] == HIGH) {
       Serial.println("S4");
-      relStd3 = LOW;
-      relStd2 = LOW;
-      relStd1 = LOW;
-      digitalWrite(rel1, LOW);
-      digitalWrite(rel2, LOW);
-      digitalWrite(rel3, LOW);
+      relStds[0] = LOW;
+      relStds[2] = LOW;
+      relStds[1] = LOW;
+      digitalWrite(rels[0], LOW);
+      digitalWrite(rels[1], LOW);
+      digitalWrite(rels[2], LOW);
       Serial.println("\033[31;49m[S4] Alle lampen UIT");
       rdy();
+      blink();
     }
-    hrkKnopStd4 = hdgKnopStd4;
+    hrkKnopStds[3] = hdgKnopStd[3];
+    isActief = false;
   }
-  if (hdgKnopStd5 != hrkKnopStd5 && relStd1 == LOW || relStd2 == LOW || relStd3 == LOW) {
-    if (hdgKnopStd5 == HIGH) {
+  if (!isActief && hdgKnopStd[4] != hrkKnopStds[4] && (relStds[0] == LOW || relStds[1] == LOW || relStds[2] == LOW)) {
+    isActief = true;
+    if (hdgKnopStd[4] == HIGH) {
       Serial.println("S5");
-      relStd3 = HIGH;
-      relStd2 = HIGH;
-      relStd1 = HIGH;
-      digitalWrite(rel1, HIGH);
-      digitalWrite(rel2, HIGH);
-      digitalWrite(rel3, HIGH);
-      Serial.println("\033[31;49m[S5] Alle lampen AAN");
+      relStds[0] = HIGH;
+      relStds[1] = HIGH;
+      relStds[2] = HIGH;
+      digitalWrite(rels[0], HIGH);
+      digitalWrite(rels[1], HIGH);
+      digitalWrite(rels[2], HIGH);
+      Serial.println("\033[32;49m[S5] Alle lampen AAN");
       rdy();
+      blink();
     }
-    hrkKnopStd5 = hdgKnopStd5;
+    hrkKnopStds[4] = hdgKnopStd[4];
+    isActief = false;
   }
 }
-void software(char ingang) {
+
+void cliHandler(char ingang) {
   if (ingang == '1') {
     Serial.println(ingang);
-    relStd1 = !relStd1;
-    digitalWrite(rel1, relStd1);
-    if (relStd1) {
+    relStds[0] = !relStds[0];
+    digitalWrite(rels[0], relStds[0]);
+    if (relStds[0]) {
       Serial.println("\033[32;49m[1] E1 AAN");
       rdy();
     } else {
@@ -167,9 +160,9 @@ void software(char ingang) {
 
   if (ingang == '2') {
     Serial.println(ingang);
-    relStd2 = !relStd2;
-    digitalWrite(rel2, relStd2);
-    if (relStd2) {
+    relStds[1] = !relStds[1];
+    digitalWrite(rels[1], relStds[1]);
+    if (relStds[1]) {
       Serial.println("\033[32;49m[2] E2 AAN");
       rdy();
     } else {
@@ -178,11 +171,11 @@ void software(char ingang) {
     }
   }
 
-  if (ingang == '3') { 
+  if (ingang == '3') {
     Serial.println(ingang);
-    relStd3 = !relStd3;
-    digitalWrite(rel3, relStd3);
-    if (relStd3) {
+    relStds[2] = !relStds[2];
+    digitalWrite(rels[2], relStds[2]);
+    if (relStds[2]) {
       Serial.println("\033[32;49m[3] E3 AAN");
       rdy();
     } else {
@@ -191,28 +184,29 @@ void software(char ingang) {
     }
   }
 
-  if (ingang == '4' || ingang == '0') { 
+  if (ingang == '4' || ingang == '0') {
     Serial.println(ingang);
-    relStd3 = LOW;
-    relStd2 = LOW;
-    relStd1 = LOW;
-    digitalWrite(rel1, LOW);
-    digitalWrite(rel2, LOW);
-    digitalWrite(rel3, LOW); 
+    relStds[0] = LOW;
+    relStds[2] = LOW;
+    relStds[1] = LOW;
+    digitalWrite(rels[0], LOW);
+    digitalWrite(rels[1], LOW);
+    digitalWrite(rels[2], LOW);
     Serial.println("\033[31;49m[0 / 4] Alle lampen UIT");
     rdy();
   }
 
-  if (ingang == '5') { 
+  if (ingang == '5') {
     Serial.println(ingang);
-    relStd3 = HIGH;
-    relStd2 = HIGH;
-    relStd1 = HIGH;
-    digitalWrite(rel1, HIGH);
-    digitalWrite(rel2, HIGH);
-    digitalWrite(rel3, HIGH); 
-    Serial.println("\033[31;49m[5] Alle lampen AAN");
+    relStds[0] = HIGH;
+    relStds[1] = HIGH;
+    relStds[2] = HIGH;
+    digitalWrite(rels[0], HIGH);
+    digitalWrite(rels[1], HIGH);
+    digitalWrite(rels[2], HIGH);
+    Serial.println("\033[32;49m[5] Alle lampen AAN");
     rdy();
+    blink();
   }
 
   if (ingang == 'h' || ingang == 'H') {
@@ -221,11 +215,11 @@ void software(char ingang) {
     Serial.println("\033[91;49m========== HELPMENU ==========");
     Serial.println("");
     Serial.println("\033[91;49m==== ALGEMENE BEDIENINGEN ====");
-    Serial.println("\033[32;49m[1] E1 AAN");
-    Serial.println("\033[32;49m[2] E2 AAN");
-    Serial.println("\033[32;49m[3] E3 AAN");
-    Serial.println("\033[31;49m[0 / 4] Alle lampen UIT");
-    Serial.println("\033[31;49m[5] Alle lampen AAN");
+    Serial.println("\033[0m[1] \033[32;49mE1 AAN \033[0m/\033[31;49m UIT");
+    Serial.println("\033[0m[2] \033[32;49mE2 AAN \033[0m/\033[31;49m UIT");
+    Serial.println("\033[0m[3] \033[32;49mE3 AAN \033[0m/\033[31;49m UIT");
+    Serial.println("\033[0m[0 / 4] \033[31;49mAlle lampen UIT");
+    Serial.println("\033[0m[5] \033[32;49mAlle lampen AAN");
     Serial.println("");
     Serial.println("\033[91;49m==== OPDRACHTREGELINTERFACE BEDIENINGEN ====");
     Serial.println("\033[0m[C] Opdrachtregelinterface wissen");
@@ -239,22 +233,23 @@ void software(char ingang) {
     verzenden = false;
     rdy();
   }
+
   if (ingang == 'i' || ingang == 'I') {
     Serial.println(ingang);
-    Serial.println("\033[39;49mLights Out V2");
+    Serial.println("\033[39;49mLights Out V3");
     Serial.println("CLI versie 3");
     Serial.println("\033[39;49mGemaakt door \033[34;49;1m17\033[36;49;1mnct \033[0m@ 2024");
     rdy();
   }
-  if ((ingang == 'x' || 'X') && verzenden == true) {
-    /* de OR operator dient niet zo gebruikt te worden, doe je het toch? Hij zal dan niet alleen op x of X reageren maar op alles. */
+
+  if ((ingang == 'x' || 'X') && verzenden == true) { /* de OR operator dient niet zo gebruikt te worden, doe je het toch? Hij zal dan niet alleen op x of X reageren maar op alles. */
     killmsg();
   }
 }
 
-void knipperLED() {
+void blink() {
   digitalWrite(LED_BUILTIN, HIGH);
-  delay(50);
+  delay(100);
   digitalWrite(LED_BUILTIN, LOW);
 }
 
@@ -265,6 +260,5 @@ void killmsg() {
 }
 
 void rdy() {
-  verzenden = false;
   Serial.print("\033[39;49m>");
 }
