@@ -249,7 +249,7 @@ void cliHandler(char ingang) {
 
 void blink() {
   digitalWrite(LED_BUILTIN, HIGH);
-  delay(100);
+  delay(50);
   digitalWrite(LED_BUILTIN, LOW);
 }
 
